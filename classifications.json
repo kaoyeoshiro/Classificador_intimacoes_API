@@ -1,0 +1,94 @@
+[
+  {
+    "numero_processo": "08001076420258120021",
+    "classe_processual": "1728",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: O XML não contém 'codigoClasse'. Classe processual: '1728'."
+    },
+    "data_classificacao": "2025-11-20T16:23:13.097827"
+  },
+  {
+    "numero_processo": "08000412820248120051",
+    "classe_processual": "7",
+    "classificacao": {
+      "processo": "08000412820248120051",
+      "classificacao": "5.2.3",
+      "justificativa": "A última movimentação de intimação direcionada ao Estado, ocorrida em 22/10/2025, determina explicitamente a apresentação de contrarrazões ao recurso de apelação interposto. O Estado inclusive já realizou a juntada da peça em 10/11/2025.",
+      "resumo": "A última movimentação de intimação direcionada ao Estado, ocorrida em 22/10/2025, determina explicitamente a apresentação de contrarrazões ao recurso de apelação interposto. O Estado inclusive já realizou a juntada da peça em 10/11/2025."
+    },
+    "data_classificacao": "2025-11-20T16:27:05.509556"
+  },
+  {
+    "numero_processo": "08001023620248120002",
+    "classe_processual": "198",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '198'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-20T16:38:23.725058"
+  },
+  {
+    "numero_processo": "08030098320238120045",
+    "classe_processual": "198",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '198'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-20T16:38:23.725058"
+  },
+  {
+    "numero_processo": "08013366120238120043",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "7.29.1",
+      "resumo": "A última movimentação processual registrada (19/11/2025) refere-se a uma decisão ('Movimento Nacional 200') que conheceu e negou provimento aos Embargos de Declaração opostos, mantendo a sentença inalterada e ordenando as intimações necessárias. Como o Estado já havia sido intimado para contrarrazões e se manifestou em 22/09/2025, a intimação pendente refere-se ao teor desta decisão em sede de embargos no 1º grau."
+    },
+    "data_classificacao": "2025-11-21T07:49:10.415712"
+  },
+  {
+    "numero_processo": "08005315920228120006",
+    "classe_processual": "14695",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '14695'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-21T07:49:10.415712"
+  },
+  {
+    "numero_processo": "08013308820258120009",
+    "classe_processual": "12135",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '12135'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-21T08:20:35.608721"
+  },
+  {
+    "numero_processo": "08013381420248120005",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "5.8",
+      "resumo": "A última intimação direcionada ao Estado de Mato Grosso do Sul ocorreu em 16/09/2025, descrita como 'Expedição de Termo - PJMS - CGJ - Intimação Eletrônica Fazenda Pública (INSERIR PRAZO)'. Tratando-se de uma determinação de prazo processual não especificada como sentença ou decisão de tutela no trecho das movimentações, e considerando que o número do processo indica início em 2024 (afastando a hipótese de primeira citação com liminar neste momento de 2025), a movimentação classifica-se como intimação de despacho simples (código 5.8)."
+    },
+    "data_classificacao": "2025-11-21T08:20:35.608721"
+  },
+  {
+    "numero_processo": "08005532220258120036",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "4.1",
+      "resumo": "A última movimentação direcionada especificamente ao Estado de Mato Grosso do Sul foi a Certidão do Oficial de Justiça datada de 14/10/2025, na qual consta que o ente foi 'CITADO e INTIMADO'. Trata-se da primeira citação do Estado no processo. Como o texto da certidão não detalha o teor de uma decisão de tutela (se deferida ou indeferida), nem menciona prazos específicos para manifestação prévia (72h ou 48h), classifica-se sob o código geral de Citação do Estado."
+    },
+    "data_classificacao": "2025-11-21T09:21:13.973037"
+  },
+  {
+    "numero_processo": "08005651620248120054",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "5.9",
+      "resumo": "A última intimação válida gerada no processo decorre do despacho datado de 24/04/2025, que determinou a remessa dos autos ao Tribunal de Justiça (emitida em 03/05/2025), após a fase de contrarrazões. Embora a última movimentação cronológica seja o recebimento dos autos do Tribunal em 06/11/2025, esta trata-se de uma movimentação administrativa de retorno (baixa) sem teor decisório ou intimatório explícito no trecho fornecido. Portanto, prevalece a classificação da intimação de remessa."
+    },
+    "data_classificacao": "2025-11-21T23:25:47.493300"
+  }
+]
