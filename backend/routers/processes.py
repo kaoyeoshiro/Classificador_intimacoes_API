@@ -28,9 +28,15 @@ def list_processes():
     # Processes with classification come first, sorted by date descending
     # Processes without classification come after
     result.sort(key=lambda x: (
-        x.get('data_classificacao') is None,  # False (classified) comes before True (not classified)
-        x.get('data_classificacao', '')  # Sort by date
-    ), reverse=True)  # Most recent first
+        x.get('data_classificacao') is not None,  # True (classified) comes after False (not classified) if reverse=True? No.
+        # Let's be explicit:
+        # We want: Classified (Newest -> Oldest) -> Unclassified
+        # Tuple comparison: (is_classified, date)
+        # (1, "2023-10-27") > (1, "2023-10-26") > (0, "")
+        # So reverse=True works.
+        x.get('data_classificacao') is not None,
+        x.get('data_classificacao', '')
+    ), reverse=True)
 
     return result
 

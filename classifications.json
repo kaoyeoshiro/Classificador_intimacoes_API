@@ -128,15 +128,6 @@
     "data_classificacao": "2025-11-24T14:53:49.794025"
   },
   {
-    "numero_processo": "",
-    "classe_processual": "N/A",
-    "classificacao": {
-      "tipo_intimacao": "N/A",
-      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe ''. Verifique se este código está incluído em algum prompt."
-    },
-    "data_classificacao": "2025-11-24T14:53:49.794025"
-  },
-  {
     "numero_processo": "08015136920248120017",
     "classe_processual": "198",
     "classificacao": {
