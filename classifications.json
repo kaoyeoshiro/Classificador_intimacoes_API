@@ -90,5 +90,122 @@
       "resumo": "A última intimação válida gerada no processo decorre do despacho datado de 24/04/2025, que determinou a remessa dos autos ao Tribunal de Justiça (emitida em 03/05/2025), após a fase de contrarrazões. Embora a última movimentação cronológica seja o recebimento dos autos do Tribunal em 06/11/2025, esta trata-se de uma movimentação administrativa de retorno (baixa) sem teor decisório ou intimatório explícito no trecho fornecido. Portanto, prevalece a classificação da intimação de remessa."
     },
     "data_classificacao": "2025-11-21T23:25:47.493300"
+  },
+  {
+    "numero_processo": "08013789120238120017",
+    "classe_processual": "198",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '198'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T13:41:02.306197"
+  },
+  {
+    "numero_processo": "08013586520258120006",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "4.1.3",
+      "resumo": "Trata-se da citação inicial do Estado (primeira vez que o ente é chamado ao processo). A intimação decorre da decisão de 18/09/2025 ('Despacho Saneador'), na qual o juiz analisou o pedido de tutela de urgência e decidiu pelo indeferimento ('a tutela postulada deve ser indeferida'), ordenando a citação da parte demandada para apresentar resposta."
+    },
+    "data_classificacao": "2025-11-24T14:40:34.098790"
+  },
+  {
+    "numero_processo": "08015498320258120015",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "8.13.2",
+      "resumo": "O Estado já integra a lide, havendo juntada de contestação anterior (28/08/2025). A última intimação eletrônica (expedida em 09/09/2025) refere-se ao despacho proferido na mesma data, que determinou a intimação das partes para especificarem as provas a produzir no prazo de dez dias."
+    },
+    "data_classificacao": "2025-11-24T14:40:34.098790"
+  },
+  {
+    "numero_processo": "08013966520258120010",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "5.8",
+      "resumo": "O Estado de Mato Grosso do Sul já compareceu espontaneamente ao processo apresentando Contestação em 26/08/2025, o que afasta a classificação de citação (4.1.x). A última intimação registrada ocorreu em 10/09/2025, mediante 'Certidão de Remessa da Intimação para o Portal Eletrônico', decorrente de uma 'Expedição de Termo' concedendo vista para 'ciência e/ou manifestação'. Esta movimentação sucede a 'Manifestação da Defensoria Pública' (provável réplica) de 03/09/2025. Trata-se, portanto, de uma intimação de despacho de mero expediente ou ato ordinatório para exercício do contraditório, classificada como Intimação de Despacho (5.8)."
+    },
+    "data_classificacao": "2025-11-24T14:53:49.794025"
+  },
+  {
+    "numero_processo": "",
+    "classe_processual": "N/A",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe ''. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T14:53:49.794025"
+  },
+  {
+    "numero_processo": "08015136920248120017",
+    "classe_processual": "198",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '198'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T14:53:49.794025"
+  },
+  {
+    "numero_processo": "08015471020258120017",
+    "classe_processual": "14695",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '14695'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T14:53:49.794025"
+  },
+  {
+    "numero_processo": "08015536920248120011",
+    "classe_processual": "198",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '198'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T14:53:49.794025"
+  },
+  {
+    "numero_processo": "08014548620258120004",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "8.13.2",
+      "resumo": "O Estado já integra a lide, havendo manifestação anterior. A última intimação expedida refere-se ao ato de especificar as provas que as partes pretendem produzir."
+    },
+    "data_classificacao": "2025-11-24T14:53:49.794025"
+  },
+  {
+    "numero_processo": "08015966320258120110",
+    "classe_processual": "14695",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '14695'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T20:52:59.309531"
+  },
+  {
+    "numero_processo": "08015898520248120052",
+    "classe_processual": "198",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '198'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T20:52:59.309531"
+  },
+  {
+    "numero_processo": "08015826420258120018",
+    "classe_processual": "1728",
+    "classificacao": {
+      "tipo_intimacao": "N/A",
+      "resumo": "Processo não classificado: Nenhum prompt configurado para a classe '1728'. Verifique se este código está incluído em algum prompt."
+    },
+    "data_classificacao": "2025-11-24T20:52:59.309531"
+  },
+  {
+    "numero_processo": "08016073620248120043",
+    "classe_processual": "7",
+    "classificacao": {
+      "tipo_intimacao": "9.1.1",
+      "resumo": "Trata-se de intimação referente à sentença proferida em 04/09/2025 (Movimento 11380), que julgou extinto o processo sem resolução de mérito, com base no art. 485, IX, do CPC (óbito da autora). Como a extinção do feito encerra a demanda sem julgamento do mérito contra o ente público, considera-se o resultado favorável ao Estado (Extinção sem julgamento de mérito - Favorável)."
+    },
+    "data_classificacao": "2025-11-24T20:52:59.309531"
   }
 ]

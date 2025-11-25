@@ -1,4 +1,4 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 import json
 from ..config import Config
 from ..models import ProcessoData, ClassificacaoResult
@@ -6,7 +6,7 @@ from ..models import ProcessoData, ClassificacaoResult
 def get_client():
     if not Config.OPENROUTER_API_KEY:
         raise ValueError("OPENROUTER_API_KEY não configurada no arquivo .env")
-    return OpenAI(
+    return AsyncOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=Config.OPENROUTER_API_KEY,
     )
@@ -30,7 +30,7 @@ def get_prompt_for_class(classe_processual: str) -> str:
     # 2. Strict Mode: No fallback. Return None if no specific prompt found.
     return None
 
-def classify_process(process_data: ProcessoData) -> ClassificacaoResult:
+async def classify_process(process_data: ProcessoData) -> ClassificacaoResult:
     # Revert to using classeProcessual as it contains the code (e.g. "7")
     class_code = process_data.classeProcessual
     
@@ -47,7 +47,7 @@ def classify_process(process_data: ProcessoData) -> ClassificacaoResult:
         )
     
     # Prepare context from movements
-    movs_text = "\n".join([f"{m.dataHora}: {m.descricao} - {m.complemento or ''}" for m in process_data.movimentos[-10:]]) # Last 10 movements
+    movs_text = "\n".join([f"{m.dataHora}: {m.descricao} - {m.complemento or ''}" for m in process_data.movimentos[-25:]]) # Last 25 movements
     
     full_content = f"""
     {prompt}
@@ -62,7 +62,7 @@ def classify_process(process_data: ProcessoData) -> ClassificacaoResult:
     """
     
     client = get_client()
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model=Config.OPENROUTER_MODEL_ID,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},

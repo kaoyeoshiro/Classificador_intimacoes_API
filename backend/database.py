@@ -37,3 +37,14 @@ def save_classification_result(result: ClassificacaoResult):
     data.append(result.model_dump(mode='json'))
     with open(CLASSIFICATIONS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
+def delete_process(numero: str):
+    processes = load_db()
+    processes = [p for p in processes if p.numero != numero]
+    save_db(processes)
+
+def delete_classification(numero: str):
+    data = load_classifications()
+    data = [c for c in data if c['numero_processo'] != numero]
+    with open(CLASSIFICATIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)

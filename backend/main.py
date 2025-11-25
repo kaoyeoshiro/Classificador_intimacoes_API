@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import processes, classification, export, prompts
+from .routers import processes, classification, export, prompts, chat
 
 app = FastAPI(title="Classificador de Intimações API")
 
@@ -17,6 +17,7 @@ app.include_router(processes.router)
 app.include_router(classification.router)
 app.include_router(export.router)
 app.include_router(prompts.router)
+app.include_router(chat.router)
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -34,4 +35,10 @@ app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 @app.get("/")
 def root():
-    return FileResponse(os.path.join(frontend_dir, "index.html"))
+    from fastapi.responses import FileResponse
+    response = FileResponse(os.path.join(frontend_dir, "index.html"))
+    # Disable caching for the HTML file to ensure users get the latest version
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response

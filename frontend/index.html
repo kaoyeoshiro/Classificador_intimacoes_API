@@ -44,7 +44,7 @@
         const API_URL = "http://localhost:8000";
 
         function App() {
-            console.log("App rendering v1.1");
+            console.log("App rendering v1.2 - Fixed deletion and timestamp");
             const [processes, setProcesses] = React.useState([]);
             const [prompts, setPrompts] = React.useState([]);
             const [view, setView] = React.useState('processes');
@@ -56,10 +56,19 @@
             const [inputProcessText, setInputProcessText] = React.useState("");
             const [classifyingProcess, setClassifyingProcess] = React.useState(null);
             const [collapsedGroups, setCollapsedGroups] = React.useState({});
+            const [chatProcess, setChatProcess] = React.useState(null);
+            const [chatHistory, setChatHistory] = React.useState({});
+            const [chatMessage, setChatMessage] = React.useState("");
+            const [chatLoading, setChatLoading] = React.useState(false);
+            const [batchClassifyModal, setBatchClassifyModal] = React.useState(false);
+            const [batchClassifyProgress, setBatchClassifyProgress] = React.useState([]);
+            const [batchStats, setBatchStats] = React.useState(null);
+            const [batchSettings, setBatchSettings] = React.useState({ force: false, maxConcurrent: 5, classe: '' });
 
             React.useEffect(() => {
                 fetchProcesses();
                 fetchPrompts();
+                fetchBatchStats();
             }, []);
 
             const fetchProcesses = async () => {
@@ -139,6 +148,159 @@
                     alert("Erro ao classificar: " + (err.response?.data?.detail || err.message));
                 } finally {
                     setClassifyingProcess(null);
+                }
+            };
+
+            const handleDeleteProcess = async (numero) => {
+                console.log("Tentando deletar processo:", numero, "Tipo:", typeof numero);
+
+                // Ensure numero is a string and not empty
+                if (!numero || String(numero).trim() === '') {
+                    alert("Número do processo inválido!");
+                    return;
+                }
+
+                const numeroStr = String(numero).trim();
+
+                if (!confirm(`Tem certeza que deseja excluir o processo ${numeroStr}?`)) return;
+                try {
+                    const url = `${API_URL}/processes/${encodeURIComponent(numeroStr)}`;
+                    console.log("DELETE URL:", url);
+                    await axios.delete(url);
+                    fetchProcesses();
+                    if (selectedProcess && selectedProcess.numero === numeroStr) {
+                        setSelectedProcess(null);
+                    }
+                    alert("Processo excluído com sucesso!");
+                } catch (err) {
+                    console.error("Erro ao deletar processo:", err);
+                    alert("Erro ao deletar: " + (err.response?.data?.detail || err.message));
+                }
+            };
+
+            const handleUploadXML = async (e) => {
+                e.preventDefault();
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                const formData = new FormData();
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files', files[i]);
+                }
+
+                setLoading(true);
+                try {
+                    const res = await axios.post(`${API_URL}/processes/upload`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+                    fetchProcesses();
+                    alert(`${res.data.length} arquivo(s) XML processado(s) com sucesso!`);
+                    e.target.value = ''; // Clear file input
+                } catch (err) {
+                    console.error("Erro ao fazer upload de XML:", err);
+                    alert("Erro ao fazer upload: " + (err.response?.data?.detail || err.message));
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleSendChatMessage = async (e) => {
+                e.preventDefault();
+                if (!chatMessage.trim() || !chatProcess) return;
+
+                const processNumber = chatProcess.numero;
+                const history = chatHistory[processNumber] || [];
+
+                // Add user message to history
+                const newUserMessage = { role: "user", content: chatMessage };
+                const updatedHistory = [...history, newUserMessage];
+                setChatHistory(prev => ({ ...prev, [processNumber]: updatedHistory }));
+                setChatMessage("");
+                setChatLoading(true);
+
+                try {
+                    const res = await axios.post(`${API_URL}/chat/${processNumber}`, {
+                        message: chatMessage,
+                        history: history
+                    });
+
+                    // Add assistant response to history
+                    const assistantMessage = { role: "assistant", content: res.data.response };
+                    setChatHistory(prev => ({
+                        ...prev,
+                        [processNumber]: [...prev[processNumber], assistantMessage]
+                    }));
+                } catch (err) {
+                    console.error("Erro no chat:", err);
+                    alert("Erro ao enviar mensagem: " + (err.response?.data?.detail || err.message));
+                    // Remove user message on error
+                    setChatHistory(prev => ({ ...prev, [processNumber]: history }));
+                } finally {
+                    setChatLoading(false);
+                }
+            };
+
+            const openChat = (process) => {
+                setChatProcess(process);
+                if (!chatHistory[process.numero]) {
+                    setChatHistory(prev => ({ ...prev, [process.numero]: [] }));
+                }
+            };
+
+            const closeChat = () => {
+                setChatProcess(null);
+                setChatMessage("");
+            };
+
+            const fetchBatchStats = async () => {
+                try {
+                    const res = await axios.get(`${API_URL}/classify/statistics`);
+                    setBatchStats(res.data);
+                } catch (err) {
+                    console.error("Erro ao buscar estatísticas:", err);
+                }
+            };
+
+            const startBatchClassify = async () => {
+                setBatchClassifyProgress([]);
+                setBatchClassifyModal(true);
+
+                const params = new URLSearchParams({
+                    force: batchSettings.force,
+                    max_concurrent: batchSettings.maxConcurrent
+                });
+                if (batchSettings.classe) {
+                    params.append('classe_processual', batchSettings.classe);
+                }
+
+                try {
+                    const eventSource = new EventSource(`${API_URL}/classify/batch_progress?${params}`);
+
+                    eventSource.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+
+                        setBatchClassifyProgress(prev => [...prev, data]);
+
+                        if (data.type === 'complete') {
+                            eventSource.close();
+                            fetchProcesses();
+                            fetchBatchStats();
+                            setTimeout(() => {
+                                alert(`Classificação concluída!\n✓ ${data.sucesso} sucessos\n✗ ${data.erros} erros`);
+                            }, 500);
+                        }
+                    };
+
+                    eventSource.onerror = (error) => {
+                        console.error('Erro no SSE:', error);
+                        eventSource.close();
+                        alert('Erro ao conectar com o servidor para classificação em lote.');
+                    };
+                } catch (err) {
+                    console.error("Erro ao iniciar classificação em lote:", err);
+                    alert("Erro ao iniciar classificação: " + err.message);
                 }
             };
 
@@ -235,7 +397,7 @@
                         <div>
                             <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
                                 Classificador Judicial
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2 align-middle">v1.1</span>
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2 align-middle">v1.2</span>
                             </h1>
                             <p className="text-slate-500 mt-1">Gestão e Inteligência Artificial para Processos</p>
                         </div>
@@ -303,6 +465,33 @@
                                 </div>
 
                                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                    <h2 className="text-lg font-semibold mb-4">Upload de XMLs</h2>
+                                    <div className="space-y-3">
+                                        <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                                            <label htmlFor="xml-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                                                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                                <span className="text-sm font-medium text-slate-600">Clique para selecionar XMLs</span>
+                                                <span className="text-xs text-slate-400">ou arraste arquivos aqui</span>
+                                            </label>
+                                            <input
+                                                id="xml-upload"
+                                                type="file"
+                                                accept=".xml"
+                                                multiple
+                                                onChange={handleUploadXML}
+                                                disabled={loading}
+                                                className="hidden"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-slate-400">
+                                            Você pode selecionar múltiplos arquivos XML. O sistema detectará duplicatas automaticamente e gerenciará as classificações.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                                     <h2 className="text-lg font-semibold mb-4">Estatísticas</h2>
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
@@ -313,6 +502,32 @@
                                             <span className="text-slate-500">Classificados</span>
                                             <span className="font-bold text-xl text-emerald-600">{processes.filter(p => p.classificacao).length}</span>
                                         </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500">Pendentes</span>
+                                            <span className="font-bold text-xl text-orange-600">{processes.filter(p => !p.classificacao).length}</span>
+                                        </div>
+                                        {batchStats && (
+                                            <div className="pt-2 border-t border-slate-100">
+                                                <div className="text-xs text-slate-400 mb-2">Taxa de Conclusão</div>
+                                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                    <div
+                                                        className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                                                        style={{ width: `${batchStats.completion_rate}%` }}
+                                                    ></div>
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-1 text-right">{batchStats.completion_rate}%</div>
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => setBatchClassifyModal(true)}
+                                            disabled={processes.filter(p => !p.classificacao).length === 0}
+                                            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                            Classificação em Lote
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -375,6 +590,20 @@
                                                                     >
                                                                         Classificar IA
                                                                     </button>
+                                                                    {proc.classificacao && (
+                                                                        <button
+                                                                            onClick={() => openChat(proc)}
+                                                                            className="px-3 py-1 text-xs font-medium bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100 transition-colors"
+                                                                        >
+                                                                            💬 Conversar
+                                                                        </button>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => handleDeleteProcess(proc.numero)}
+                                                                        className="px-3 py-1 text-xs font-medium bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors"
+                                                                    >
+                                                                        Excluir
+                                                                    </button>
                                                                 </div>
                                                             </div>
 
@@ -383,7 +612,7 @@
                                                                 <div className="mb-3 p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
                                                                     <div className="flex items-center gap-2 mb-1">
                                                                         <span className="text-xs font-bold text-emerald-700 uppercase">Classificação IA</span>
-                                                                        <span className="text-xs text-emerald-600">{new Date(proc.data_classificacao).toLocaleTimeString()}</span>
+                                                                        <span className="text-xs text-emerald-600">{new Date(proc.data_classificacao).toLocaleString('pt-BR')}</span>
                                                                     </div>
                                                                     <div className="text-sm">
                                                                         <div><span className="font-semibold text-emerald-800">Tipo:</span> <span className="text-emerald-900">{proc.classificacao.tipo_intimacao || proc.classificacao.codigo || proc.classificacao.classificacao}</span></div>
@@ -594,6 +823,340 @@
                                         </pre>
                                     </details>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Chat Modal */}
+                    {chatProcess && (
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={closeChat}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                                {/* Header */}
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-gradient-to-r from-purple-50 to-indigo-50">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                            </svg>
+                                            <h2 className="text-xl font-bold text-slate-800">Conversa sobre Classificação</h2>
+                                        </div>
+                                        <p className="text-sm text-slate-600">Processo: <span className="font-medium text-blue-600">{chatProcess.numero}</span></p>
+
+                                        {/* Classification Summary */}
+                                        {chatProcess.classificacao && (
+                                            <div className="mt-3 p-3 bg-white rounded-lg border border-purple-100 shadow-sm">
+                                                <div className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Classificação Atual</div>
+                                                <div className="text-sm font-medium text-slate-800">
+                                                    {chatProcess.classificacao.tipo_intimacao || chatProcess.classificacao.codigo || chatProcess.classificacao.classificacao}
+                                                </div>
+                                                {(chatProcess.classificacao.resumo || chatProcess.classificacao.justificativa) && (
+                                                    <div className="text-xs text-slate-600 mt-1">
+                                                        {chatProcess.classificacao.resumo || chatProcess.classificacao.justificativa}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button onClick={closeChat} className="text-slate-400 hover:text-slate-600 ml-4">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+
+                                {/* Messages Area */}
+                                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
+                                    {(!chatHistory[chatProcess.numero] || chatHistory[chatProcess.numero].length === 0) ? (
+                                        <div className="text-center py-12">
+                                            <div className="inline-block p-4 bg-purple-50 rounded-full mb-3">
+                                                <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                </svg>
+                                            </div>
+                                            <p className="text-slate-500 text-sm">
+                                                Comece a conversa! Pergunte sobre a classificação,<br />
+                                                questione decisões ou peça sugestões para melhorar o prompt.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        chatHistory[chatProcess.numero].map((msg, idx) => (
+                                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                                                    msg.role === 'user'
+                                                        ? 'bg-purple-600 text-white'
+                                                        : 'bg-white border border-slate-200 text-slate-800 shadow-sm'
+                                                }`}>
+                                                    <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                    {chatLoading && (
+                                        <div className="flex justify-start">
+                                            <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Input Area */}
+                                <div className="p-4 border-t border-slate-200 bg-white">
+                                    <form onSubmit={handleSendChatMessage} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={chatMessage}
+                                            onChange={(e) => setChatMessage(e.target.value)}
+                                            placeholder="Digite sua mensagem..."
+                                            disabled={chatLoading}
+                                            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all disabled:opacity-50 disabled:bg-slate-50"
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={chatLoading || !chatMessage.trim()}
+                                            className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                            </svg>
+                                            Enviar
+                                        </button>
+                                    </form>
+                                    <p className="text-xs text-slate-400 mt-2">
+                                        💡 Dica: Pergunte "Por que você classificou assim?" ou "Como posso melhorar o prompt?"
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Batch Classification Modal */}
+                    {batchClassifyModal && (
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => !batchClassifyProgress.some(p => p.type === 'processing' || p.type === 'start') && setBatchClassifyModal(false)}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                                {/* Header */}
+                                <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-purple-50">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                                <h2 className="text-xl font-bold text-slate-800">Classificação em Lote</h2>
+                                            </div>
+                                            <p className="text-sm text-slate-600">Classifique múltiplos processos de uma vez com IA</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setBatchClassifyModal(false)}
+                                            disabled={batchClassifyProgress.some(p => p.type === 'processing' || p.type === 'start')}
+                                            className="text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Configuration / Start */}
+                                {batchClassifyProgress.length === 0 && (
+                                    <div className="p-6 space-y-6">
+                                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                            <div className="flex gap-3">
+                                                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <div className="text-sm text-blue-800">
+                                                    <p className="font-medium mb-1">Sobre a Classificação em Lote</p>
+                                                    <p>Este recurso classifica automaticamente todos os processos pendentes usando IA. Você pode configurar a concorrência e filtros abaixo.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                    Concorrência Máxima
+                                                </label>
+                                                <select
+                                                    value={batchSettings.maxConcurrent}
+                                                    onChange={(e) => setBatchSettings({ ...batchSettings, maxConcurrent: parseInt(e.target.value) })}
+                                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                >
+                                                    <option value="3">3 processos (Estável)</option>
+                                                    <option value="5">5 processos (Recomendado)</option>
+                                                    <option value="10">10 processos (Rápido)</option>
+                                                    <option value="15">15 processos (Muito Rápido)</option>
+                                                    <option value="20">20 processos (Máximo)</option>
+                                                </select>
+                                                <p className="text-xs text-slate-400 mt-1">Quantos processos classificar simultaneamente</p>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                    Filtrar por Classe
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={batchSettings.classe}
+                                                    onChange={(e) => setBatchSettings({ ...batchSettings, classe: e.target.value })}
+                                                    placeholder="Ex: 7 (deixe vazio para todos)"
+                                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                />
+                                                <p className="text-xs text-slate-400 mt-1">Opcional: classificar apenas uma classe</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 p-4 bg-slate-50 rounded-lg">
+                                            <input
+                                                type="checkbox"
+                                                id="force-reclassify"
+                                                checked={batchSettings.force}
+                                                onChange={(e) => setBatchSettings({ ...batchSettings, force: e.target.checked })}
+                                                className="w-4 h-4 text-indigo-600 rounded"
+                                            />
+                                            <label htmlFor="force-reclassify" className="text-sm text-slate-700 cursor-pointer">
+                                                Forçar reclassificação de processos já classificados
+                                            </label>
+                                        </div>
+
+                                        {batchStats && (
+                                            <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg">
+                                                <div className="text-center">
+                                                    <div className="text-2xl font-bold text-slate-800">{batchStats.total_processes}</div>
+                                                    <div className="text-xs text-slate-500">Total</div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <div className="text-2xl font-bold text-emerald-600">{batchStats.total_classified}</div>
+                                                    <div className="text-xs text-slate-500">Classificados</div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <div className="text-2xl font-bold text-orange-600">{batchStats.pending_classification}</div>
+                                                    <div className="text-xs text-slate-500">Pendentes</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={startBatchClassify}
+                                            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                            </svg>
+                                            Iniciar Classificação em Lote
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Progress Display */}
+                                {batchClassifyProgress.length > 0 && (
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
+                                        {batchClassifyProgress.map((event, idx) => {
+                                            if (event.type === 'start') {
+                                                return (
+                                                    <div key={idx} className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                                                            <span className="text-sm font-medium text-blue-800">
+                                                                Iniciando classificação de {event.total} processos...
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (event.type === 'processing') {
+                                                return (
+                                                    <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 flex items-center gap-3">
+                                                        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-medium text-slate-700">{event.numero}</div>
+                                                            <div className="text-xs text-slate-500">Classe {event.classe} • Processando...</div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (event.type === 'success') {
+                                                return (
+                                                    <div key={idx} className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-center gap-3">
+                                                        <svg className="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-medium text-emerald-800">{event.numero}</div>
+                                                            <div className="text-xs text-emerald-600">
+                                                                {event.classificacao} • {event.progress_percent}% concluído
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (event.type === 'error') {
+                                                return (
+                                                    <div key={idx} className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-center gap-3">
+                                                        <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-medium text-red-800">{event.numero}</div>
+                                                            <div className="text-xs text-red-600">{event.erro}</div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (event.type === 'complete') {
+                                                return (
+                                                    <div key={idx} className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6">
+                                                        <div className="text-center mb-4">
+                                                            <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-full mb-3">
+                                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </div>
+                                                            <h3 className="text-lg font-bold text-indigo-900">Classificação Concluída!</h3>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                            <div className="text-center p-3 bg-white rounded-lg">
+                                                                <div className="text-2xl font-bold text-slate-800">{event.total}</div>
+                                                                <div className="text-xs text-slate-500">Total</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-white rounded-lg">
+                                                                <div className="text-2xl font-bold text-emerald-600">{event.sucesso}</div>
+                                                                <div className="text-xs text-slate-500">Sucessos</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-white rounded-lg">
+                                                                <div className="text-2xl font-bold text-red-600">{event.erros}</div>
+                                                                <div className="text-xs text-slate-500">Erros</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-white rounded-lg">
+                                                                <div className="text-2xl font-bold text-blue-600">{event.duracao_segundos}s</div>
+                                                                <div className="text-xs text-slate-500">Duração</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-4 text-center text-sm text-slate-600">
+                                                            Velocidade: {event.processos_por_segundo} processos/segundo
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setBatchClassifyModal(false);
+                                                                setBatchClassifyProgress([]);
+                                                            }}
+                                                            className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors"
+                                                        >
+                                                            Fechar
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return null;
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
